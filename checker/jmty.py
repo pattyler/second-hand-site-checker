@@ -4,9 +4,21 @@ from bs4 import BeautifulSoup
 
 
 search_obj = {
-    "search_term": "marin bike"
+    "search_term": "bike"
 }
 
+def is_sale_finished(url):
+    resp = requests.get(url)
+    if resp.status_code != 200:
+        raise Exception
+
+    soup = BeautifulSoup(resp.text, "html.parser")
+    p_tags = soup.find("div", id="items").find("div", class_="clearfix").find("p")
+    text_after_br_tag = len(p_tags.contents) > 2
+    if not text_after_br_tag:
+        return False
+
+    return "終了いたしました" in p_tags.contents[2] 
 
 def get_search_html_response():
     resp = requests.get(
@@ -32,9 +44,12 @@ def _extract_id(raw_url_string):
     return expr.search(raw_url_string).group(1)
 
 def process_soup_list_item(soup_list_item):
+    url =  soup_list_item.find("div", class_="p-item-content-info").find("a")["href"]
     return {
             "id": _extract_id(soup_list_item.find("h2", "p-item-title").a["href"]),
-            "price": _extract_price(soup_list_item.find("div", class_="p-item-most-important").string)
+            "price": _extract_price(soup_list_item.find("div", class_="p-item-most-important").string),
+            "url": url,
+            "is_finished": is_sale_finished(url)
     }
 
 
@@ -46,4 +61,4 @@ def process_html(html):
 if __name__ == "__main__":
     full_html_resp = get_search_html_response()
     items = process_html(full_html_resp)
-    print(items)
+    [print(f"{item}") for item in items]
