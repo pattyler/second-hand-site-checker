@@ -20,9 +20,9 @@ def is_sale_finished(url):
 
     return "終了いたしました" in p_tags.contents[2] 
 
-def get_search_html_response():
+def get_search_html_response(page_num=1):
     resp = requests.get(
-            "https://jmty.jp/all/sale",
+            f'https://jmty.jp/all/sale/p-{page_num}',
             params = { "keyword": search_obj["search_term"]  }
         )
     if resp.status_code != 200:
@@ -30,8 +30,7 @@ def get_search_html_response():
 
     return resp.text
 
-def get_souped_search_results(html):
-    soup = BeautifulSoup(html, "html.parser")
+def get_souped_search_results(soup):
     return soup.find_all("li", class_="p-articles-list-item")
 
 def _extract_price(raw_price_string):
@@ -43,6 +42,14 @@ def _extract_id(raw_url_string):
     expr = re.compile(".*-(\w+)")
     return expr.search(raw_url_string).group(1)
 
+def _search_has_next_page(soup):
+    page_list = soup.find("div", class_="page_list")
+    if (page_list is None):
+        return False
+
+    return (page_list.parent.find("div", class_="last") is not None)
+
+
 def process_soup_list_item(soup_list_item):
     url =  soup_list_item.find("div", class_="p-item-content-info").find("a")["href"]
     return {
@@ -52,12 +59,20 @@ def process_soup_list_item(soup_list_item):
             "is_finished": is_sale_finished(url)
     }
 
-def process_html(html):
-    soup_results = get_souped_search_results(html)
+def _page_contains_finished_ads(listed_items):
+    return True in list(map(lambda x: x['is_finished'], listed_items))
+
+def run(current_page_num=1):
+    full_html_resp = get_search_html_response(current_page_num)
+    soup = BeautifulSoup(full_html_resp, "html.parser")
+    soup_results = get_souped_search_results(soup)
     listed_items = [process_soup_list_item(soup_result) for soup_result in soup_results]
+    if (_search_has_next_page(soup) \
+        and not _page_contains_finished_ads(listed_items)):
+            listed_items += run(current_page_num+1)
+
     return listed_items
 
 if __name__ == "__main__":
-    full_html_resp = get_search_html_response()
-    items = process_html(full_html_resp)
-    [print(f"{item}") for item in items]
+    listed_items = run()
+    [print(f"{item}") for item in listed_items]
