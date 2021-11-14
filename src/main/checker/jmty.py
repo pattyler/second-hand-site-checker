@@ -52,7 +52,6 @@ def process_soup_list_item(soup_list_item):
             "is_finished": is_sale_finished(url)
     }
 
-
 def process_html(html):
     soup_results = get_souped_search_results(html)
     listed_items = [process_soup_list_item(soup_result) for soup_result in soup_results]
