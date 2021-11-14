@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 
 
 search_obj = {
-    "search_term": "bike"
+    "search_term": "road bike"
 }
 
 def is_sale_finished(url):
