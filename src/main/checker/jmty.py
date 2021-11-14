@@ -7,6 +7,25 @@ search_obj = {
     "search_term": "road bike"
 }
 
+def _extract_price(raw_price_string):
+    expr = re.compile("\d+,?\d*")
+    price_string = expr.search(raw_price_string).group()
+    return int(price_string.replace(",",""))
+
+def _extract_id(raw_url_string):
+    expr = re.compile(".*-(\w+)")
+    return expr.search(raw_url_string).group(1)
+
+def _search_has_next_page(soup):
+    page_list = soup.find("div", class_="page_list")
+    if (page_list is None):
+        return False
+
+    return (page_list.parent.find("div", class_="last") is not None)
+
+def _page_contains_finished_ads(listed_items):
+    return True in list(map(lambda x: x['is_finished'], listed_items))
+
 def is_sale_finished(url):
     resp = requests.get(url)
     if resp.status_code != 200:
@@ -33,22 +52,6 @@ def get_search_html_response(page_num=1):
 def get_souped_search_results(soup):
     return soup.find_all("li", class_="p-articles-list-item")
 
-def _extract_price(raw_price_string):
-    expr = re.compile("\d+,?\d*")
-    price_string = expr.search(raw_price_string).group()
-    return int(price_string.replace(",",""))
-
-def _extract_id(raw_url_string):
-    expr = re.compile(".*-(\w+)")
-    return expr.search(raw_url_string).group(1)
-
-def _search_has_next_page(soup):
-    page_list = soup.find("div", class_="page_list")
-    if (page_list is None):
-        return False
-
-    return (page_list.parent.find("div", class_="last") is not None)
-
 
 def process_soup_list_item(soup_list_item):
     url =  soup_list_item.find("div", class_="p-item-content-info").find("a")["href"]
@@ -58,9 +61,6 @@ def process_soup_list_item(soup_list_item):
             "url": url,
             "is_finished": is_sale_finished(url)
     }
-
-def _page_contains_finished_ads(listed_items):
-    return True in list(map(lambda x: x['is_finished'], listed_items))
 
 def run(current_page_num=1):
     full_html_resp = get_search_html_response(current_page_num)

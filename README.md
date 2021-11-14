@@ -12,6 +12,13 @@ python src/main/checker/jmty.py
 
 
 ### Run tests
+#### Unit tests
+From the project root:
+```bash
+cd src
+python -m unittest discover -s test/unit
+```
+
 #### Integration tests
 From the project root:
 ```bash
