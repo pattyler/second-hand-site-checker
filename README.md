@@ -7,7 +7,8 @@ _Note: This will change soon._
 
 From the project root:
 ```bash
-python src/main/checker/jmty.py
+cd src/main
+python main.py
 ```
 
 

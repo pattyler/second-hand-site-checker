@@ -1,6 +1,9 @@
 import requests
 import re
 from bs4 import BeautifulSoup
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 search_obj = {
@@ -63,6 +66,7 @@ def process_soup_list_item(soup_list_item):
     }
 
 def run(current_page_num=1):
+    logger.info(f'Searching page {current_page_num}')
     full_html_resp = get_search_html_response(current_page_num)
     soup = BeautifulSoup(full_html_resp, "html.parser")
     soup_results = get_souped_search_results(soup)
@@ -72,7 +76,3 @@ def run(current_page_num=1):
             listed_items += run(current_page_num+1)
 
     return listed_items
-
-if __name__ == "__main__":
-    listed_items = run()
-    [print(f"{item}") for item in listed_items]
