@@ -76,19 +76,7 @@ class TestPageContainsFinishedAds(unittest.TestCase):
 @mock.patch('main.checker.jmty.requests')
 class TestCheck(unittest.TestCase):
 
-    _finished_sales_ids = ['m5q5d']
-
-    def _assert_number_finished_sales(self, items, number_finished):
-        filtered_items = list(filter(lambda item: item['is_finished'] is True, items))
-        self.assertEqual(len(filtered_items), number_finished)
-
-    def _assert_number_unfinished_sales(self, items, number_unfinished):
-        filtered_items = list(filter(lambda item: item['is_finished'] is False, items))
-        self.assertEqual(len(filtered_items), number_unfinished)
-
-    def _assert_contains_ids(self, items, ids):
-        filtered_items = set([x['id'] for x in filter(lambda item: item['id'] in ids, items)])
-        self.assertEqual(len(filtered_items), len(ids))
+    _finished_sales_ids = ['mockId2']
 
     def _file_as_string(self, filepath):
         this_files_dir = os.path.dirname(os.path.abspath(__file__))
@@ -96,25 +84,48 @@ class TestCheck(unittest.TestCase):
         with open(test_html_filepath, encoding='utf-8') as f:
             return f.read().replace('\n', ' ')
 
-    def _create_mock_response(self, url, **kwargs):
+    def _is_article_request(self, url):
+        """Actual article being requested rather than search results"""
+        return '/sale-' in url and '/article-' in url
+
+    def _create_mock_response(self, url):
         # TODO tidy this up
-        if '/sale-' in url and '/article-' in url: # actual article is being requested
-            id_ = re.search('.*/article-(.*)', url).group(1)
+        if self._is_article_request(url):
+            id_ = jmty_checker._extract_id(url)
             if id_ in TestCheck._finished_sales_ids:
                 return MockResponse(200, self._file_as_string('mock_finished_sale_article.html'))
-            else: # assume it is an unfinished sale
+            else:  # assume it is an unfinished sale
                 return MockResponse(200, self._file_as_string('mock_unfinished_sale_article.html'))
         else:
             return mock.DEFAULT
+
+    def _map_by_article_id(self, items):
+        return {item['id']: item for item in items}
+
+    def _assert_values_equal(self, result: dict, **kwargs):
+        """Assert that the values given in kwargs are present in `result` and match."""
+        for arg_key in kwargs:
+            self.assertEqual(result[arg_key], kwargs[arg_key])
 
     def test_when_one_applicable_page_then_correct_objects_returned(self, requests_mock):
         requests_mock.get.return_value = MockResponse(200, self._file_as_string('results_total_one_page.html'))
         requests_mock.get.side_effect = self._create_mock_response
         items = jmty_checker.check('road bike')
+        self.assertEqual(len(items), 2)
 
-        self._assert_number_unfinished_sales(items, 1)
-        self._assert_number_finished_sales(items, 19)
-        self._assert_contains_ids(items, ['m5q5d', 'm86ld'])
+        items_by_id = self._map_by_article_id(items)
+        self._assert_values_equal(
+            items_by_id['mockId1'],
+            id='mockId1',
+            is_finished=False,
+            price=25000
+        )
+        self._assert_values_equal(
+            items_by_id['mockId2'],
+            id='mockId2',
+            is_finished=True,
+            price=100
+        )
 
 
 class MockResponse:
