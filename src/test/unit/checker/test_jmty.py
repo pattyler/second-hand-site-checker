@@ -1,8 +1,12 @@
 import unittest
 import unittest.mock as mock
-import main.checker.jmty as jmty_checker
+import main.checker as checker
 import os.path
 from bs4 import BeautifulSoup
+
+
+def any_jmty_checker():
+    return checker.Jmty("")
 
 
 class TestSearchHasNextPage(unittest.TestCase):
@@ -15,19 +19,19 @@ class TestSearchHasNextPage(unittest.TestCase):
 
     def test_when_only_one_page_results_then_false(self):
         soup = self._get_soup_of_local_file('results_total_one_page.html')
-        self.assertFalse(jmty_checker._search_has_next_page(soup))
+        self.assertFalse(any_jmty_checker()._search_has_next_page(soup))
 
     def test_when_no_results_then_false(self):
         soup = self._get_soup_of_local_file('results_empty.html')
-        self.assertFalse(jmty_checker._search_has_next_page(soup))
+        self.assertFalse(any_jmty_checker()._search_has_next_page(soup))
 
     def test_when_multiple_pages_and_current_is_not_last_then_true(self):
         soup = self._get_soup_of_local_file('results_many_pages_current_not_last.html')
-        self.assertTrue(jmty_checker._search_has_next_page(soup))
+        self.assertTrue(any_jmty_checker()._search_has_next_page(soup))
 
     def test_when_multiple_pages_and_current_is_last_then_false(self):
         soup = self._get_soup_of_local_file('results_many_pages_current_is_last.html')
-        self.assertFalse(jmty_checker._search_has_next_page(soup))
+        self.assertFalse(any_jmty_checker()._search_has_next_page(soup))
 
 
 class TestPageContainsFinishedAds(unittest.TestCase):
@@ -54,7 +58,7 @@ class TestPageContainsFinishedAds(unittest.TestCase):
             self._create_finished_advert()
         ]
 
-        self.assertTrue(jmty_checker._page_contains_finished_ads(mock_adverts))
+        self.assertTrue(any_jmty_checker()._page_contains_finished_ads(mock_adverts))
 
     def test_when_no_finished_ads_then_false(self):
         mock_adverts = [
@@ -64,14 +68,14 @@ class TestPageContainsFinishedAds(unittest.TestCase):
             self._create_unfinished_advert()
         ]
 
-        self.assertFalse(jmty_checker._page_contains_finished_ads(mock_adverts))
+        self.assertFalse(any_jmty_checker()._page_contains_finished_ads(mock_adverts))
 
     def test_when_no_ads_then_false(self):
         mock_adverts = []
-        self.assertFalse(jmty_checker._page_contains_finished_ads(mock_adverts))
+        self.assertFalse(any_jmty_checker()._page_contains_finished_ads(mock_adverts))
 
 
-@mock.patch('main.checker.jmty.requests')
+@mock.patch('main.checker.requests')
 class TestCheck(unittest.TestCase):
 
     def _map_by_article_id(self, items):
@@ -103,7 +107,7 @@ class TestCheck(unittest.TestCase):
 
     def test_when_one_page_then_correct_objects_returned(self, requests_mock):
         requests_mock.get.side_effect = self._mock_get
-        items = jmty_checker.check('road bike')
+        items = checker.Jmty('road bike').check()
         self.assertEqual(len(items), 2)
 
         items_by_id = self._map_by_article_id(items)

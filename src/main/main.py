@@ -10,8 +10,14 @@ logging.config.dictConfig(logging_config_yaml)
 
 
 # Now run the actual application
-import checker.jmty as jmty_checker
+import checker
 
 logger = logging.getLogger(__name__)
-listed_items = jmty_checker.run()
+
+jmty_checkers = [
+    checker.Jmty("road bike"),
+    checker.Jmty("gravel bike")
+]
+
+listed_items = [jmty_checker.check() for jmty_checker in jmty_checkers]
 [logging.info(f"{item}") for item in listed_items]
