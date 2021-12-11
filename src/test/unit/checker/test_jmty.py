@@ -2,8 +2,6 @@ import unittest
 import unittest.mock as mock
 import main.checker.jmty as jmty_checker
 import os.path
-import re
-
 from bs4 import BeautifulSoup
 
 
@@ -76,7 +74,13 @@ class TestPageContainsFinishedAds(unittest.TestCase):
 @mock.patch('main.checker.jmty.requests')
 class TestCheck(unittest.TestCase):
 
-    _finished_sales_ids = ['mockId2']
+    def _map_by_article_id(self, items):
+        return {item['id']: item for item in items}
+
+    def _assert_values_equal(self, result: dict, **kwargs):
+        """Assert that the values given in kwargs are present in `result` and match."""
+        for arg_key in kwargs:
+            self.assertEqual(result[arg_key], kwargs[arg_key])
 
     def _file_as_string(self, filepath):
         this_files_dir = os.path.dirname(os.path.abspath(__file__))
@@ -88,28 +92,17 @@ class TestCheck(unittest.TestCase):
         """Actual article being requested rather than search results"""
         return '/sale-' in url and '/article-' in url
 
-    def _create_mock_response(self, url):
-        # TODO tidy this up
+    def _mock_get(self, url, **kwargs):
         if self._is_article_request(url):
-            id_ = jmty_checker._extract_id(url)
-            if id_ in TestCheck._finished_sales_ids:
+            if 'mockId2' in url:
                 return MockResponse(200, self._file_as_string('mock_finished_sale_article.html'))
-            else:  # assume it is an unfinished sale
+            else:
                 return MockResponse(200, self._file_as_string('mock_unfinished_sale_article.html'))
         else:
-            return mock.DEFAULT
+            return MockResponse(200, self._file_as_string('results_total_one_page.html'))
 
-    def _map_by_article_id(self, items):
-        return {item['id']: item for item in items}
-
-    def _assert_values_equal(self, result: dict, **kwargs):
-        """Assert that the values given in kwargs are present in `result` and match."""
-        for arg_key in kwargs:
-            self.assertEqual(result[arg_key], kwargs[arg_key])
-
-    def test_when_one_applicable_page_then_correct_objects_returned(self, requests_mock):
-        requests_mock.get.return_value = MockResponse(200, self._file_as_string('results_total_one_page.html'))
-        requests_mock.get.side_effect = self._create_mock_response
+    def test_when_one_page_then_correct_objects_returned(self, requests_mock):
+        requests_mock.get.side_effect = self._mock_get
         items = jmty_checker.check('road bike')
         self.assertEqual(len(items), 2)
 
@@ -129,7 +122,8 @@ class TestCheck(unittest.TestCase):
 
 
 class MockResponse:
-    """Mock response object from the requests module"""
+    """Mock response object from the `requests` module"""
+
     def __init__(self, status_code, text):
         self.status_code = status_code
         self.text = text
