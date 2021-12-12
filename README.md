@@ -26,3 +26,7 @@ From the project root:
 cd src
 python -m unittest discover -s test/integration
 ```
+
+### Notes on files
+
+- `.env` - Default environment variables for docker-compose.
