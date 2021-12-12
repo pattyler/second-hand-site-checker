@@ -6,6 +6,29 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class _JmtyItem:
+
+    def __init__(self, id, price, url, is_finished):
+        self.id = id
+        self.price = price
+        self.url = url
+        self.is_finished = is_finished
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __str__(self):
+        return str({
+            "id": self.id,
+            "price": self.price,
+            "url": self.url,
+            "is_finished": self.is_finished
+        })
+
+
 class Jmty:
 
     def __init__(self, search_term: str):
@@ -28,7 +51,7 @@ class Jmty:
         return page_list.parent.find("div", class_="last") is not None
 
     def _page_contains_finished_ads(self, listed_items):
-        return True in list(map(lambda x: x['is_finished'], listed_items))
+        return True in list(map(lambda x: x.is_finished, listed_items))
 
     def _is_sale_finished(self, url):
         resp = requests.get(url)
@@ -58,12 +81,13 @@ class Jmty:
 
     def _process_soup_list_item(self, soup_list_item):
         url = soup_list_item.find("div", class_="p-item-content-info").find("a")["href"]
-        return {
+        item_params = {
             "id": self._extract_id(soup_list_item.find("h2", "p-item-title").a["href"]),
             "price": self._extract_price(soup_list_item.find("div", class_="p-item-most-important").string),
             "url": url,
             "is_finished": self._is_sale_finished(url)
         }
+        return _JmtyItem(**item_params)
 
     def _check(self, current_page_num=1):
         logger.info(f'Searching page {current_page_num}')

@@ -21,4 +21,5 @@ jmty_checkers = [
 ]
 
 listed_items = utils.flatten([jmty_checker.check() for jmty_checker in jmty_checkers])
-[logging.info(f"{item}") for item in listed_items]
+filtered_items = set(listed_items) # remove duplicates if present
+[logging.info(f"{item}") for item in filtered_items]

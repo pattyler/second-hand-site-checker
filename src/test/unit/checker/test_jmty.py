@@ -79,12 +79,7 @@ class TestPageContainsFinishedAds(unittest.TestCase):
 class TestCheck(unittest.TestCase):
 
     def _map_by_article_id(self, items):
-        return {item['id']: item for item in items}
-
-    def _assert_values_equal(self, result: dict, **kwargs):
-        """Assert that the values given in kwargs are present in `result` and match."""
-        for arg_key in kwargs:
-            self.assertEqual(result[arg_key], kwargs[arg_key])
+        return {item.id: item for item in items}
 
     def _file_as_string(self, filepath):
         this_files_dir = os.path.dirname(os.path.abspath(__file__))
@@ -111,18 +106,13 @@ class TestCheck(unittest.TestCase):
         self.assertEqual(len(items), 2)
 
         items_by_id = self._map_by_article_id(items)
-        self._assert_values_equal(
-            items_by_id['mockId1'],
-            id='mockId1',
-            is_finished=False,
-            price=25000
-        )
-        self._assert_values_equal(
-            items_by_id['mockId2'],
-            id='mockId2',
-            is_finished=True,
-            price=100
-        )
+        self.assertEqual(items_by_id['mockId1'].id, 'mockId1')
+        self.assertEqual(items_by_id['mockId1'].is_finished, False)
+        self.assertEqual(items_by_id['mockId1'].price, 25000)
+
+        self.assertEqual(items_by_id['mockId2'].id, 'mockId2')
+        self.assertEqual(items_by_id['mockId2'].is_finished, True)
+        self.assertEqual(items_by_id['mockId2'].price, 100)
 
 
 class MockResponse:
@@ -131,3 +121,21 @@ class MockResponse:
     def __init__(self, status_code, text):
         self.status_code = status_code
         self.text = text
+
+
+class TestJmtyItem(unittest.TestCase):
+
+    def test_when_ids_not_equal_then_objects_not_equal(self):
+        item1 = checker._JmtyItem(id=1, price=0, url="", is_finished=False)
+        item2 = checker._JmtyItem(id=2, price=0, url="", is_finished=False)
+        self.assertFalse(item1 == item2)
+
+    def test_when_ids_equal_then_objects_equal(self):
+        item1 = checker._JmtyItem(id=1, price=0, url="", is_finished=False)
+        item2 = checker._JmtyItem(id=1, price=999, url="www.something.com", is_finished=True)
+        self.assertTrue(item1 == item2)
+
+    def test_when_ids_equal_then_hashes_equal(self):
+        item1 = checker._JmtyItem(id=1, price=0, url="", is_finished=False)
+        item2 = checker._JmtyItem(id=1, price=999, url="www.something.com", is_finished=True)
+        self.assertTrue(item1.__hash__() == item2.__hash__())
